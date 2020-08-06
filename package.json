@@ -1,0 +1,28 @@
+{
+  "name": "graphql-postgres-mongo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon server/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haejinjo/graphql-pg-mongo.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/haejinjo/graphql-pg-mongo/issues"
+  },
+  "homepage": "https://github.com/haejinjo/graphql-pg-mongo#readme",
+  "dependencies": {
+    "apollo-server": "^2.16.1",
+    "graphql": "^15.3.0",
+    "mongodb": "^3.6.0",
+    "mongoose": "^5.9.27",
+    "nodemon": "^2.0.4",
+    "pg": "^8.3.0"
+  }
+}
