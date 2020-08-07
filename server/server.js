@@ -32,7 +32,7 @@ const { User, dogDB } = require('./models/models');
 /*
  * 2. CREATE GRAPHQL SCHEMA
  */
-const typeDefs = gql`
+const typeDefs = gql(`
   type Dog {
     id: Int!
     name: String!
@@ -55,7 +55,7 @@ const typeDefs = gql`
     createUser(name: String!): User
     createDog(name: String!, breed: String!, walkerId: String!): Dog
   }
-`;
+`);
 
 /*
  * 3. CREATE A MAP OF RESOLVERS
