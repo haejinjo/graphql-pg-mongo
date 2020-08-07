@@ -4,6 +4,9 @@ const { Pool } = require('pg');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+/*
+ * CONFIGURE DATA SOURCES
+ */
 
 /*
  * POSTGRES STUFF

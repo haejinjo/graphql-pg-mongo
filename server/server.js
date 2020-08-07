@@ -2,30 +2,36 @@ const { ApolloServer, gql } = require('apollo-server');
 const { ObjectID } = require('mongodb');
 
 /*
- * Scenario:
- * I have a dog walking web app.
- * I'm storing Users in MongoDB and Dogs in PostgreSQL
+ * => SCENARIO:
+ *    I have a dog walking web app.
+ *    The app has User (i.e. dog walker) and Dog entities.
+ *    I decide my User data would be better stored in a nonrelational DB like MongoDB,
+ *    and that my Dog data will scale better using a relational DB like PostgreSQL.
  *
- * tl;dr
- * To mix data sources, just resolve fields by requesting data from different places.
+ * => HOW WE CAN MIX DATA SOURCES USING GRAPHQL:
+ *    GraphQL allows us to resolve fields by requesting data from different places.
+ *
+ *    In other words, we can resolve fields _individually_ in GraphQL, so
+ *    it doesn't matter what a field's data source is.
+ *
+ *    User `id` and `name` <= Mongo but User `dogs` array contents <= Postgres
+ *    Dog `name` and `breed` <= Postgres but  Dog `walker` <= Mongo
  */
 
+
 /*
- * First,
+ * 1. SETUP MODEL OBJECTS USING DATA SOURCES
+ *
  * Grab mongoose `User` model containing logic to query *User documents*
-   -_id (ObjectId), name (String), dogIds (Number Array)
+   _id (ObjectId), name (String), dogIds (Number Array)
  * and Postgres `dogDB` model containing logic to query *Dog data rows*
-   - id (serial/integer), name (varchar), breed (varchar(60)), walkerId (varchar)
+    id (serial/integer), name (varchar), breed (varchar(60)), walkerId (varchar)
  */
 const { User, dogDB } = require('./models/models');
 
-// User item will come from Mongo database
-
-// Dog name and breed will come from postgres db but
-// User dogId will come from Mongo database
-
-// We can resolve fields individually in GraphQL,
-// so doesn't matter what a field's data source is
+/*
+ * 2. CREATE GRAPHQL SCHEMA
+ */
 const typeDefs = gql`
   type Dog {
     id: Int!
@@ -51,11 +57,18 @@ const typeDefs = gql`
   }
 `;
 
+/*
+ * 3. CREATE A MAP OF RESOLVERS
+ * Tell GraphQL how to use data sources to populate schema fields
+ * i.e.
+ * When a client queries for a particular field, the resolver mapped to that field
+ * fetches the requested data from the appropriate data source.
+ */
 const resolvers = {
-  // How we actually create users and dogs
+  // Mutation Top-Level Resolver
   Mutation: {
-    // Insert user document into Mongo database
     createUser: async (_, { name }) => {
+      // Insert user document into Mongo database
       const user = new User({ name, dogIds: [] });
 
       try {
@@ -64,12 +77,11 @@ const resolvers = {
         console.error(e.stack);
       }
 
-      // Don't forget to return user!
       return user;
     },
 
-    // Insert dog row into PostgreSQL database
     createDog: async (_, { name, breed, walkerId }) => {
+      // Insert dog row into PostgreSQL database
       const createQuery = `INSERT INTO public.dogs("name", "breed", "walkerId")
                            VALUES($1, $2, $3)
                            RETURNING *`;
@@ -89,8 +101,9 @@ const resolvers = {
       dog = data.rows[0];
 
       try {
-        // Update in Mongo the id of the Dog I just inserted into Postgres DB
-        // Keep track in Mongo all the IDs in Postgres, so I can reference them later
+        // In Mongo,
+        //  update the id of the Dog I just inserted into Postgres DB
+        //  keep track of all the dog IDs in Postgres, so I can reference them later
         await User.updateOne(
           { _id: new ObjectID(walkerId) },
           {
@@ -106,19 +119,22 @@ const resolvers = {
       return dog;
     },
 
-  }, // end of Mutation resolver
+  },
 
-  // Resolver field for general Querying
+  // Query Top-Level Resolver
   Query: {
+    // users Query resolver
     // Request all users from Mongo data src
     users: () => User.find(),
+
+    // dogs Query resolver
     // Request all dogs from Postgres data src
     dogs: async () => {
       try {
         const dogData = await dogDB.query('SELECT * FROM dogs');
         return dogData.rows;
       } catch (e) {
-        console.log('ERROR: dogDB.query for all dogs')
+        console.log('ERROR: dogDB.query for all dogs');
         console.error(e.stack);
       }
       return [];
@@ -153,6 +169,9 @@ const resolvers = {
   },
 };
 
+/*
+ * START APOLLO SERVER (given GraphQL schema and resolvers)
+ */
 const server = new ApolloServer({ typeDefs, resolvers });
 
 server.listen().then(({ url }) => {
