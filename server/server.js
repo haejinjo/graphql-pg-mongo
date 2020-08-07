@@ -144,10 +144,7 @@ const resolvers = {
   // Resolver field for Dog type
   // Find Dog's walker (fetch from wherever you want)
   Dog: {
-    walker: (root) => {
-      console.log(root);
-      return User.findOne({ dogId: root.id });
-    },
+    walker: (root) => User.findOne({ dogIds: root.id }),
   },
 
   // Resolver field for User type
